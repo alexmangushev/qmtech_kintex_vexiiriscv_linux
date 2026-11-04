@@ -1,0 +1,8 @@
+opensbi*
+buildroot/
+tools/
+workarea/
+linux.dtb
+Image
+opensbi.bin
+rootfs.cpio

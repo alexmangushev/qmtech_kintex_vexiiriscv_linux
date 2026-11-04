@@ -1,0 +1,216 @@
+
+/dts-v1/;
+
+/ {
+        compatible = "litex,qmtech_kintex7_devboard", "litex,soc";
+        model = "qmtech_kintex7_devboard";
+        #address-cells = <1>;
+        #size-cells    = <1>;
+
+
+        chosen {
+            bootargs = "console=liteuart earlycon=liteuart,0xf0001000 rootwait root=/dev/ram0 ip=192.168.1.50:192.168.1.100:192.168.1.100:255.255.255.0::eth0:off:::";
+            linux,initrd-start = <0x41000000>;
+            linux,initrd-end   = <0x41800000>;
+        };
+
+        sys_clk: clock-100000000 {
+            compatible = "fixed-clock";
+            #clock-cells = <0>;
+            clock-frequency  = <100000000>;
+        };
+
+        cpus {
+            #address-cells = <1>;
+            #size-cells    = <0>;
+            timebase-frequency = <100000000>;
+
+            CPU0: cpu@0 {
+                device_type = "cpu";
+                compatible = "riscv";
+                riscv,isa = "rv64i2p0_mafdc_zihpm_zifencei_zicsr_zicntr";
+                riscv,isa-base = "rv64i";
+                riscv,isa-extensions = "a", "c", "d", "f", "i", "m", "zicntr", "zicsr", "zifencei", "zihpm";
+                mmu-type = "riscv,sv39";
+                reg = <0>;
+                clock-frequency = <100000000>;
+                status = "okay";
+                
+                
+                
+                L0: interrupt-controller {
+                    #address-cells = <0>;
+                    #interrupt-cells = <0x00000001>;
+                    interrupt-controller;
+                    compatible = "riscv,cpu-intc";
+                };
+            };
+
+            CPU1: cpu@1 {
+                device_type = "cpu";
+                compatible = "riscv";
+                riscv,isa = "rv64i2p0_mafdc_zihpm_zifencei_zicsr_zicntr";
+                riscv,isa-base = "rv64i";
+                riscv,isa-extensions = "a", "c", "d", "f", "i", "m", "zicntr", "zicsr", "zifencei", "zihpm";
+                mmu-type = "riscv,sv39";
+                reg = <1>;
+                clock-frequency = <100000000>;
+                status = "okay";
+                
+                
+                
+                L1: interrupt-controller {
+                    #address-cells = <0>;
+                    #interrupt-cells = <0x00000001>;
+                    interrupt-controller;
+                    compatible = "riscv,cpu-intc";
+                };
+            };
+
+            
+            cpu-map {
+                cluster0 {
+                    core0 {
+                        cpu = <&CPU0>;
+                    };
+                    core1 {
+                        cpu = <&CPU1>;
+                    };
+                };
+            };
+            
+        };
+
+        memory: memory@40000000 {
+            device_type = "memory";
+            reg = <0x40000000 0x10000000>;
+        };
+
+        reserved-memory {
+            #address-cells = <1>;
+            #size-cells    = <1>;
+            ranges;
+
+            opensbi@40f00000 {
+                reg = <0x40f00000 0x80000>;
+            };
+
+            framebuffer@4ff00000 {
+                reg = <0x4ff00000 0xea600>;
+            };
+
+        };
+
+        vreg_mmc: vreg_mmc {
+            compatible = "regulator-fixed";
+            regulator-name = "vreg_mmc";
+            regulator-min-microvolt = <3300000>;
+            regulator-max-microvolt = <3300000>;
+            regulator-always-on;
+        };
+
+        soc {
+            #address-cells = <1>;
+            #size-cells    = <1>;
+            compatible = "simple-bus";
+            interrupt-parent = <&intc0>;
+            ranges;
+
+            soc_ctrl0: soc_controller@f0000000 {
+                compatible = "litex,soc-controller";
+                reg = <0xf0000000 0xc>;
+                status = "okay";
+            };
+
+            lintc0: clint@f0010000 {
+                compatible = "riscv,clint0";
+                interrupts-extended = <
+                    &L0 3 &L0 7
+                    &L1 3 &L1 7>;
+                reg = <0xf0010000 0x10000>;
+                reg-names = "control";
+            };
+
+            intc0: interrupt-controller@f0c00000 {
+                compatible = "sifive,fu540-c000-plic", "sifive,plic-1.0.0";
+                reg = <0xf0c00000 0x400000>;
+                #address-cells = <0>;
+                #interrupt-cells = <1>;
+                interrupt-controller;
+                interrupts-extended = <
+                    &L0 11 &L0 9
+                    &L1 11 &L1 9>;
+                riscv,ndev = <32>;
+                
+            };
+
+            liteuart0: serial@f0001000 {
+                compatible = "litex,liteuart";
+                reg = <0xf0001000 0x100>;
+                interrupts = <1>;
+                status = "okay";
+            };
+
+            mac0: mac@f0002000 {
+                compatible = "litex,liteeth";
+                reg = <0xf0002000 0x7c>,
+                      <0xf0002800 0x0a>,
+                      <0x80000000 0x2000>;
+                reg-names = "mac", "mdio", "buffer";
+                litex,rx-slots = <2>;
+                litex,tx-slots = <2>;
+                litex,slot-size = <2048>;
+                interrupts = <3>;
+                
+                status = "okay";
+            };
+
+            mmc0: mmc@f0004000 {
+                compatible = "litex,mmc";
+                reg = <0xf0004000 0x1c>,
+                      <0xf000401c 0x2c>,
+                      <0xf0004048 0x20>,
+                      <0xf0004068 0x20>,
+                      <0xf0004088 0x100>;
+                reg-names = "phy", "core", "reader", "writer", "irq";
+                clocks = <&sys_clk>;
+                vmmc-supply = <&vreg_mmc>;
+                bus-width = <0x04>;
+                interrupts = <4>;
+                big-endian;
+                status = "okay";
+            };
+
+            leds: gpio@f0003800 {
+                compatible = "litex,gpio";
+                reg = <0xf0003800 0x4>;
+                gpio-controller;
+                #gpio-cells = <2>;
+                litex,direction = "out";
+                status = "disabled";
+            };
+
+            framebuffer0: framebuffer@4ff00000 {
+                compatible = "simple-framebuffer";
+                reg = <0x4ff00000 0xea600>;
+                width = <800>;
+                height = <600>;
+                stride = <1600>;
+                format = "r5g6b5";
+            };
+
+        };
+
+        aliases {
+
+                serial0 = &liteuart0;
+
+        };
+
+};
+
+&leds {
+        litex,ngpio = <4>;
+        status = "okay";
+};
+
