@@ -38,15 +38,16 @@ class _CRG(Module):
         if with_ethernet:
             self.clock_domains.cd_eth   = ClockDomain()
         if with_vga:
-            self.clock_domains.cd_vga   = ClockDomain(reset_less=True)
+            self.clock_domains.cd_vga   = ClockDomain()
 
         # # #
 
         self.submodules.pll = pll = S7PLL(speedgrade=-1)
         rst = platform.request("cpu_reset")
+        clk50= platform.request("clk50")
         self.comb += pll.reset.eq(~rst | self.rst)
 
-        pll.register_clkin(platform.request("clk50"), 50e6)
+        pll.register_clkin(clk50, 50e6)
         pll.create_clkout(self.cd_sys,       sys_clk_freq)
         pll.create_clkout(self.cd_sys4x,     4*sys_clk_freq)
         pll.create_clkout(self.cd_sys4x_dqs, 4*sys_clk_freq, phase=90)
@@ -54,7 +55,11 @@ class _CRG(Module):
         if with_ethernet:
             pll.create_clkout(self.cd_eth,   25e6)
         if with_vga:
-            pll.create_clkout(self.cd_vga,   40e6)
+            # pll.create_clkout(self.cd_vga,   40e6)
+            self.submodules.video_pll = video_pll = S7MMCM(speedgrade=-1)
+            video_pll.reset.eq(~rst | self.rst)
+            video_pll.register_clkin(clk50, 50e6)
+            video_pll.create_clkout(self.cd_vga,   40e6)
 
         platform.add_false_path_constraints(self.cd_sys.clk, pll.clkin) # Ignore sys_clk to pll.clkin path created by SoC's rst.
 
@@ -64,7 +69,7 @@ class _CRG(Module):
 
 class BaseSoC(SoCCore):
     def __init__(self, toolchain="vivado", sys_clk_freq=int(100e6),
-                 with_ethernet   = False, with_etherbone=False, eth_ip="192.168.1.50", eth_dynamic_ip=False,
+                 with_ethernet   = False, with_etherbone=False, eth_ip="192.168.1.50", eth_dynamic_ip=False, with_usb=False,
                  local_ip        = "", remote_ip="",
                  with_led_chaser = True, with_video_terminal=False, with_video_framebuffer=False, with_video_colorbars=False,
                  with_spi_flash=False, with_switches=False, **kwargs):
@@ -74,12 +79,12 @@ class BaseSoC(SoCCore):
         if kwargs["uart_name"] == "serial":
             kwargs["uart_name"] = "JP5_serial"
 
+        # CRG --------------------------------------------------------------------------------------
+        self.crg = _CRG(platform, sys_clk_freq, with_ethernet or with_etherbone, with_video_terminal or with_video_framebuffer or with_video_colorbars)
+
         SoCCore.__init__(self, platform, sys_clk_freq,
             ident = "LiteX SoC on QMTech Kintex 7 Development board",
             **kwargs)
-
-        # CRG --------------------------------------------------------------------------------------
-        self.submodules.crg = _CRG(platform, sys_clk_freq, with_ethernet or with_etherbone, with_video_terminal or with_video_framebuffer or with_video_colorbars)
 
         # DDR3 SDRAM -------------------------------------------------------------------------------
         if not self.integrated_main_ram_size:
@@ -125,6 +130,29 @@ class BaseSoC(SoCCore):
             if with_video_colorbars:
                 self.add_video_colorbars(phy=self.videophy, timings="800x600@60Hz", clock_domain="vga")
 
+        # USB-OHCI ---------------------------------------------------------------------------------
+        if with_usb:
+            from litex.build.generic_platform import Subsignal, Pins
+            from litex.soc.cores.usb_ohci import USBOHCI
+
+            # Use the Video PLL if available
+            self.crg.clock_domains.cd_usb = ClockDomain()
+            self.crg.pll.create_clkout(self.crg.cd_usb, 48e6, margin=0)
+
+            # Machdyne PMOD (https://github.com/machdyne/usb_host_dual_socket_pmod) on JB
+
+            from litex_boards.extensions.pmod import PmodUSBHostDual_aliexpress
+
+            self.platform.add_extension(PmodUSBHostDual_aliexpress("pmod10", bundled=True, name="usb_pmodb_dual"))
+
+            self.submodules.usb_ohci = USBOHCI(self.platform, self.platform.request("usb_pmodb_dual"), usb_clk_freq=int(48e6))
+            self.mem_map["usb_ohci"] = 0x90000000
+            self.bus.add_slave("usb_ohci_ctrl", self.usb_ohci.wb_ctrl, region=SoCRegion(origin=self.mem_map["usb_ohci"], size=0x1000, cached=False)) # FIXME: Mapping.
+            dma_bus = getattr(self, "dma_bus", self.bus)
+            dma_bus.add_master("usb_ohci_dma", master=self.usb_ohci.wb_dma)
+
+            self.comb += self.cpu.interrupt[16].eq(self.usb_ohci.interrupt)
+
         # Leds -------------------------------------------------------------------------------------
         if with_led_chaser:
             self.submodules.leds = LedChaser(
@@ -141,6 +169,7 @@ def main():
     from litex.build.parser import LiteXArgumentParser
     parser = LiteXArgumentParser(platform=qmtech_kintex7_devboard.Platform, description="LiteX SoC on QMTech Kintex-7 Devboard.")
     parser.add_target_argument("--sys-clk-freq", default=100e6, type=float, help="System clock frequency.")
+    parser.add_target_argument("--with-usb",       action="store_true",       help="Enable USB Host.")
     ethopts = parser.target_group.add_mutually_exclusive_group()
     ethopts.add_argument("--with-ethernet",  action="store_true", help="Enable Ethernet support.")
     ethopts.add_argument("--with-etherbone", action="store_true", help="Enable Etherbone support.")
@@ -168,6 +197,7 @@ def main():
         with_etherbone         = args.with_etherbone,
         eth_ip                 = args.eth_ip,
         eth_dynamic_ip         = args.eth_dynamic_ip,
+        with_usb               = args.with_usb,
         local_ip               = args.local_ip,
         remote_ip              = args.remote_ip,
         with_spi_flash         = args.with_spi_flash,

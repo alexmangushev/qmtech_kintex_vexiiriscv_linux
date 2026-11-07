@@ -125,6 +125,7 @@ _io = [
 ]
 
 _connectors = [
+    ("pmod10", "C11 A12 D13 A14 C12 A13 D14 B14"), #JP10
     # 25x2 header
     ("JP5", {
           # odd row  even row

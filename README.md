@@ -9,7 +9,7 @@ mkdir -p workarea; cd workarea;
 python3 -m litex_boards.targets.qmtech_kintex7_devboard --build \
 --bus-standard axi \
 --cpu-type vexiiriscv --cpu-variant=linux --cpu-count=1 \
---with-video-framebuffer --with-sdcard \
+--with-video-framebuffer --with-sdcard --with-usb \
 --with-ethernet --with-coherent-dma \
 --uart-baudrate 115200 --uart-name gpio_serial
 cd ..
@@ -20,9 +20,8 @@ mkdir -p workarea; cd workarea;
 python3 -m litex_boards.targets.qmtech_kintex7_devboard --build \
 --bus-standard axi \
 --cpu-type vexiiriscv --cpu-variant=debian --cpu-count=2 \
---with-video-framebuffer --with-sdcard \
---with-ethernet --eth-ip 192.168.1.50 \
---with-coherent-dma --l2-byte=262144 \
+--with-video-framebuffer --with-sdcard --with-usb \
+--with-ethernet --with-coherent-dma --l2-byte=262144 \
 --uart-baudrate 115200 --uart-name gpio_serial
 cd ..
 ```
