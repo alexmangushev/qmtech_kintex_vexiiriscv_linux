@@ -3,11 +3,11 @@ index 82744962d938..a70b18b2c0d5 100644
 --- a/drivers/mtd/spi-nor/litex-spiflash.c
 +++ b/drivers/mtd/spi-nor/litex-spiflash.c
 @@ -278,7 +278,7 @@ static ssize_t spi_flash_nor_write(struct spi_nor *nor, loff_t to, size_t len,
-        return len;
+ 	return len;
  }
  
 -static ssize_t spi_flash_nor_write_reg(struct spi_nor *nor, u8 opcode,
 +static int spi_flash_nor_write_reg(struct spi_nor *nor, u8 opcode,
-                                       const u8 *buf, size_t len)
+ 				       const u8 *buf, size_t len)
  {
-        /* Write WRITE ENABLE command*/
+ 	/* Write WRITE ENABLE command*/

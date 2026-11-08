@@ -104,10 +104,13 @@ unset CROSS_COMPILE
 ``` -->
 
 # Buildroot (Kernel + rootFS)
+Check rootfs size after build and correct initrd in DT.
+To enable display data in monitor, add to bootargs console=tty0.
+If you want to disable start gui, remove console=tty0 from DT and add empty file to `buildroot_configs_64_gui/board/litex_soc/rootfs_overlay/etc/init.d/S99xdm`
 - RV32
 ```shell
 git clone git://git.busybox.net/buildroot
-cd buildroot; git checkout 2025.02;
+cd buildroot; git checkout 2025.02.10;
 export CROSS_COMPILE=../tools/riscv/bin/riscv64-unknown-linux-gnu-
 make O=build/basic  BR2_EXTERNAL=../buildroot_configs_32 litex_soc_basic_defconfig
 (cd build/basic/ && make -j$(nproc))
@@ -118,10 +121,9 @@ cp ./build/basic/images/Image ../images/Image
 - RV64
 ```shell
 git clone git://git.busybox.net/buildroot
-cd buildroot; git checkout 2025.02;
+cd buildroot; git checkout 2025.02.10;
 export CROSS_COMPILE=../tools/riscv/bin/riscv64-unknown-linux-gnu-
-make O=build/basic  BR2_EXTERNAL=../buildroot_configs_64 litex_soc_basic_defconfig
-# do 0000.litex-spiflash_c.patch 
+make O=build/basic  BR2_EXTERNAL=../buildroot_configs_64_gui litex_soc_basic_defconfig
 (cd build/basic/ && make -j$(nproc))
 unset CROSS_COMPILE
 cp ./build/basic/images/rootfs.cpio ../images/rootfs.cpio
