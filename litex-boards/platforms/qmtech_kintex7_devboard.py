@@ -66,9 +66,9 @@ _io = [
     ("vga", 0,
         Subsignal("hsync_n", Pins("W26")),
         Subsignal("vsync_n", Pins("W25")),
-        Subsignal("r", Pins("P23 P25 N26 N23 M26")),
-        Subsignal("g", Pins("T22 U25 R22 T23 R23 R25")),
-        Subsignal("b", Pins("V26 U26 V24 V23 U24")),
+        Subsignal("r", Pins("M26 N23 N26 P25 P23")), 
+        Subsignal("g", Pins("R25 R23 T23 R22 U25 T22")),
+        Subsignal("b", Pins("U24 V23 V24 U26 V26")), 
         IOStandard("LVCMOS33"),
     ),
 
