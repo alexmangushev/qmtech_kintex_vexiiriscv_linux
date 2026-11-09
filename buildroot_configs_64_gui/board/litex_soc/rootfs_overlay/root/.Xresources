@@ -1,0 +1,11 @@
+Xft.antialias: false
+Xft.rgba: none
+Xft.hinting: true
+Xft.hintstyle: hintslight
+
+XTerm*renderFont: false
+XTerm*faceName: Fixed
+XTerm*faceSize: 10
+XTerm*colorMode: true
+! XTerm*background: black
+! XTerm*foreground: white

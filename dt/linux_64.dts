@@ -11,7 +11,7 @@
         chosen {
             bootargs = "console=liteuart earlycon=liteuart,0xf0001000 rootwait root=/dev/ram0 ip=192.168.1.50:192.168.1.100:192.168.1.100:255.255.255.0::eth0:off:::";
             linux,initrd-start = <0x41000000>;
-            linux,initrd-end   = <0x41800000>;
+            linux,initrd-end   = <0x454D9A00>;
         };
 
         sys_clk: clock-100000000 {
@@ -28,7 +28,7 @@
             CPU0: cpu@0 {
                 device_type = "cpu";
                 compatible = "riscv";
-                riscv,isa = "rv64i2p0_mafdc_zihpm_zifencei_zicsr_zicntr";
+                riscv,isa = "rv64i2p0_mafdc_zicsr_zihpm_zicntr_zifencei";
                 riscv,isa-base = "rv64i";
                 riscv,isa-extensions = "a", "c", "d", "f", "i", "m", "zicntr", "zicsr", "zifencei", "zihpm";
                 mmu-type = "riscv,sv39";
@@ -49,7 +49,7 @@
             CPU1: cpu@1 {
                 device_type = "cpu";
                 compatible = "riscv";
-                riscv,isa = "rv64i2p0_mafdc_zihpm_zifencei_zicsr_zicntr";
+                riscv,isa = "rv64i2p0_mafdc_zicsr_zihpm_zicntr_zifencei";
                 riscv,isa-base = "rv64i";
                 riscv,isa-extensions = "a", "c", "d", "f", "i", "m", "zicntr", "zicsr", "zifencei", "zihpm";
                 mmu-type = "riscv,sv39";
@@ -162,6 +162,13 @@
                 litex,slot-size = <2048>;
                 interrupts = <3>;
                 
+                status = "okay";
+            };
+
+            usb0: usb@90000000 {
+                compatible = "generic-ohci";
+                reg = <0x90000000 0x1000>;
+                interrupts = <16>;
                 status = "okay";
             };
 

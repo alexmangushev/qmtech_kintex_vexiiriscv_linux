@@ -35,9 +35,9 @@ cu -l /dev/ttyUSB0 -s 115200 or litex_term /dev/ttyUSB0;
 # Create dts
 ```shell
 cd workarea;
-python3 -m litex.tools.litex_json2dts_linux build/qmtech_kintex7_devboard/csr.json > ../linux.dts
-dtc -O dtb -I dts -o ../images/linux.dtb ../linux.dts
+python3 -m litex.tools.litex_json2dts_linux build/qmtech_kintex7_devboard/csr.json > ../dt/linux.dts
 cd ..
+dtc -O dtb -I dts -o ./images/linux.dtb ./dt/linux.dts
 ```
 
 # Toolchain
